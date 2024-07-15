@@ -1,3 +1,4 @@
+import LatestInvoices from '@/components/shared/dashboard/latest-invoices'
 import RevenueChartWrapper from '@/components/shared/dashboard/revenue-chart-wrapper'
 import StatCardsWrapper from '@/components/shared/dashboard/stat-cards-wrapper'
 import { lusitana } from '@/components/shared/fonts'
@@ -23,7 +24,9 @@ export default async function Page() {
         <Suspense fallback={<RevenueChartSkeleton />}>
           <RevenueChartWrapper />
         </Suspense>
-        <LatestInvoicesSkeleton />
+        <Suspense fallback={<LatestInvoicesSkeleton />}>
+          <LatestInvoices />
+        </Suspense>
       </div>
     </main>
   )
