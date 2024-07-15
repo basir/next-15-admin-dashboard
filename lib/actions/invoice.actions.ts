@@ -1,7 +1,11 @@
+'use server'
+
 import db from '@/db/drizzle'
 import { customers, invoices, revenue } from '@/db/schema'
-import { count, desc, eq, sql } from 'drizzle-orm'
+import { count, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { formatCurrency } from '../utils'
+import { revalidatePath } from 'next/cache'
+import { ITEMS_PER_PAGE } from '../constants'
 
 export async function fetchCardData() {
   try {
@@ -70,5 +74,74 @@ export async function fetchLatestInvoices() {
   } catch (error) {
     console.error('Database Error:', error)
     throw new Error('Failed to fetch the latest invoices.')
+  }
+}
+
+export async function deleteInvoice(id: string) {
+  try {
+    await db.delete(invoices).where(eq(invoices.id, id))
+    revalidatePath('/dashboard/invoices')
+    return { message: 'Deleted Invoice' }
+  } catch (error) {
+    return { message: 'Database Error: Failed to Delete Invoice.' }
+  }
+}
+
+export async function fetchFilteredInvoices(
+  query: string,
+  currentPage: number
+) {
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE
+  try {
+    const data = await db
+      .select({
+        id: invoices.id,
+        amount: invoices.amount,
+        name: customers.name,
+        email: customers.email,
+        image_url: customers.image_url,
+        status: invoices.status,
+        date: invoices.date,
+      })
+      .from(invoices)
+      .innerJoin(customers, eq(invoices.customer_id, customers.id))
+      .where(
+        or(
+          ilike(customers.name, sql`${`%${query}%`}`),
+          ilike(customers.email, sql`${`%${query}%`}`),
+          ilike(invoices.status, sql`${`%${query}%`}`)
+        )
+      )
+      .orderBy(desc(invoices.date))
+      .limit(ITEMS_PER_PAGE)
+      .offset(offset)
+
+    return data
+  } catch (error) {
+    console.error('Database Error:', error)
+    throw new Error('Failed to fetch invoices.')
+  }
+}
+
+export async function fetchInvoicesPages(query: string) {
+  try {
+    const data = await db
+      .select({
+        count: count(),
+      })
+      .from(invoices)
+      .innerJoin(customers, eq(invoices.customer_id, customers.id))
+      .where(
+        or(
+          ilike(customers.name, sql`${`%${query}%`}`),
+          ilike(customers.email, sql`${`%${query}%`}`),
+          ilike(invoices.status, sql`${`%${query}%`}`)
+        )
+      )
+    const totalPages = Math.ceil(Number(data[0].count) / ITEMS_PER_PAGE)
+    return totalPages
+  } catch (error) {
+    console.error('Database Error:', error)
+    throw new Error('Failed to fetch total number of invoices.')
   }
 }
