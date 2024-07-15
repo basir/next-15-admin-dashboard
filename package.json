@@ -26,7 +26,8 @@
     "react-is": "19.0.0-rc-85acf2d195-20240711",
     "recharts": "^2.12.7",
     "tailwind-merge": "^2.3.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
